@@ -7,6 +7,7 @@ output: github_document
 library(tidyverse)
 library(viridis)
 library(p8105.datasets)
+library(dplyr)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -24,5 +25,97 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
+
+# Problem 1
+First, we need to load the `instacart` data. 
+
+```{r}
+data("instacart")
+```
+
+The `instacart` data has `r ncol(instacart)` variables and `r nrow(instacart)` observations. The variables include `r names(instacart)`. Among these, eval_set, product_name, aisle, and department are character variables, and the others are numerical variables. 
+
+### How many aisles are there, and which aisles are the most items ordered from?
+
+```{r}
+instacart %>% 
+  group_by(aisle) %>% 
+  summarize(n_obs = n()) %>% 
+  arrange(desc(n_obs))
+```
+
+There are `134` aisles. The most items ordered form the `fresh vegetables` aisle, and the number of orders from this aisle is 150609. 
+
+### Plotting the number of items ordered in each aisle with more than 10000 items ordered. 
+
+```{r}
+instacart %>% 
+  group_by(aisle) %>% 
+  summarize(n_obs = n()) %>% 
+  arrange(desc(n_obs)) %>% 
+  filter(n_obs > 10000) %>% 
+  ggplot(aes(x = aisle, y = n_obs)) +
+  geom_point() +
+  labs(
+    title = "The Number of Items Ordered in Each Aisle", 
+    x = "Aisles", 
+    y = "The number of items ordered"
+  ) + 
+  theme(axis.text.x = element_text(angle = 50, hjust = 1))
+```
+
+The scatter plot shows the number of items order in each aisle, which these aisles are those has more than 10000 items ordered. 
+
+### The three most popular items in “baking ingredients”, “dog food care”, and “packaged vegetables fruits”
+
+```{r}
+baking = instacart %>% 
+  filter(aisle %in% "baking ingredients") %>% 
+  group_by(aisle) %>% 
+  count(product_name) %>% 
+  mutate(rank = min_rank(desc(n))) %>% 
+  arrange(desc(n)) %>% 
+  filter(rank <= 3) 
+
+dog = instacart %>% 
+  filter(aisle %in% "dog food care") %>% 
+  group_by(aisle) %>% 
+  count(product_name) %>% 
+  mutate(rank = min_rank(desc(n))) %>% 
+  arrange(desc(n)) %>% 
+  filter(rank <= 3) 
+
+veg = instacart %>% 
+  filter(aisle %in% "packaged vegetables fruits") %>% 
+  group_by(aisle) %>%
+  count(product_name) %>% 
+  mutate(rank = min_rank(desc(n))) %>% 
+  arrange(desc(n)) %>% 
+  filter(rank <= 3) 
+
+Q3 = bind_rows(baking, dog, veg) %>% 
+  subset(select = -rank) %>% 
+  knitr::kable()
+```
+
+The table shows that for `baking ingredients`, the top three popular items are `light brown sugar`, `pure baking soda`, and `cane sugar`, and the corresponding times of order are 499, 387, and 336; for `dog food care` aisle, the top three popular items are `Snack Sticks Chicken & Rice Recipe Dog Treats`, `Organix Chicken & Brown Rice Recipe`, and `Small Dog Biscuits`, and the corresponding times of order are 30, 28, and 26; for `packaged vegetables fruits` aisle, the top three popular items are `organic baby spinach`, `organic raspberries`, and `organic blueberries`, and their corresponding times of order are 9784, 5546, and 4966. 
+
+### The mean hour at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week
+
+```{r}
+Q4 = 
+  instacart %>% 
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(mean_order_hour = mean(order_hour_of_day)) %>% 
+  mutate(order_dow = recode(order_dow, `0` = "Sunday", `1` = "Monday", `2` = "Tuesday", `3` = "Wednesday", `4` = "Thurday", `5` = "Friday", `6` = "Saturday")) %>% 
+  pivot_wider(
+    names_from = order_dow,
+    values_from = mean_order_hour
+  ) %>% 
+  knitr::kable()
+```
+
+The table shows that 
 
 
