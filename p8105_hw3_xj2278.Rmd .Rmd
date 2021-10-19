@@ -33,7 +33,7 @@ First, we need to load the `instacart` data.
 data("instacart")
 ```
 
-The `instacart` data has `r ncol(instacart)` variables and `r nrow(instacart)` observations. The variables include `r names(instacart)`. Among these, eval_set, product_name, aisle, and department are character variables, and the others are numerical variables. 
+The `instacart` data has `r ncol(instacart)` variables and `r nrow(instacart)` observations. The variables include `r names(instacart)`. Among these, eval_set, product_name, aisle, and department are character variables, and the others are numerical variables. The product_name variable indicates the name of products (eg. Bulgarian Yogurt, Organic Celery Hearts), the aisle variable indicates the aisle which the products belong to (eg. yogurt, fresh vegetables), and the department represents the department that the corresponding aisle belongs to (eg. dairy eggs, produce). 
 
 ### How many aisles are there, and which aisles are the most items ordered from?
 
@@ -97,7 +97,9 @@ veg = instacart %>%
   filter(rank <= 3) 
 
 baking_dog_veg = bind_rows(baking, dog, veg) %>% 
-  subset(select = -rank) %>% 
+  subset(select = -rank) 
+
+head(baking_dog_veg)%>% 
   knitr::kable()
 ```
 
@@ -105,7 +107,7 @@ The table shows that for `baking ingredients`, the top three popular items are `
 
 ### The mean hour at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week
 
-```{r}
+```{r, message = FALSE}
 mean_hours = 
   instacart %>% 
   filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
@@ -115,7 +117,9 @@ mean_hours =
   pivot_wider(
     names_from = order_dow,
     values_from = mean_order_hour
-  ) %>% 
+  ) 
+
+head(mean_hours)%>% 
   knitr::kable()
 ```
 
@@ -204,4 +208,59 @@ ny_state %>%
 The two-panel boxplot shows the distribution of data_value for responses among locations in NY State for 2006 and for 2010. 
 
 # Problem 3
+## Clean the dataset
+```{r}
+accel = 
+  read_csv("./data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    weekday_vs_weekend = ifelse(day %in% c("Monday","Tuesday","Wednesday","Thursday","Friday"), "weekday", "weekend")
+  ) %>% 
+  select(week, day_id, day, weekday_vs_weekend, everything())
+```
 
+The resulting dataset has `r ncol(accel)` variables, which includes week, day_id, day of the week, weekday vs weekend, and 1440 activity counts for each minute of a 24-hour day starting at midnight. It has `r nrow(accel)` days of observations.  
+
+## Create a table showing total activity variables for each day
+```{r, message = FALSE}
+total_activity = 
+  accel %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute",
+    names_prefix = "activity_",
+    values_to = "activity"
+  ) %>% 
+  group_by(day_id, weekday_vs_weekend) %>% 
+  summarize(total_actvity = sum(activity))
+
+head(total_activity) %>% 
+  knitr::kable()
+```
+
+The table shows the total activity variable for each day. The activities detected on weekends tend to be less than the weekdays, however, there also are a few weekend days with high activity level. 
+
+## Graph of 24-hour activity time courses for each day
+```{r}
+accel %>% 
+  pivot_longer(
+    activity_1:activity_1440, 
+    names_to = "minute", 
+    names_prefix = "activity_", 
+    values_to = "activity"
+  ) %>% 
+  mutate(minute = as.numeric(minute)) %>%
+  ggplot(aes(x = minute, y = activity)) +
+  geom_point(aes(color = day, alpha = .1)) +
+  scale_x_continuous(
+    breaks = c(seq(from = 0, to = 1440, by = 120)),
+    labels = c((seq(from = 0, to = 1440, by = 120)))
+    ) +
+  labs(
+    x = "Minutes in a day", 
+    y = "Activity", 
+    title = "24-hour Activity Time Courses for Each Day"
+  )
+```
+
+According to this graph, the activity tends to be high during the morning (6 am ~ 12 pm) and the evening (10 pm ~ 11 pm). 
