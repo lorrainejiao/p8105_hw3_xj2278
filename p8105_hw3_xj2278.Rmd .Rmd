@@ -52,7 +52,10 @@ There are `134` aisles. The most items ordered form the `fresh vegetables` aisle
 instacart %>% 
   group_by(aisle) %>% 
   summarize(n_obs = n()) %>% 
-  arrange(desc(n_obs)) %>% 
+  mutate(
+    aisle = factor(aisle),
+    aisle = fct_reorder(aisle,n_obs)
+  ) %>%  
   filter(n_obs > 10000) %>% 
   ggplot(aes(x = aisle, y = n_obs)) +
   geom_point() +
@@ -126,7 +129,7 @@ data("brfss_smart2010")
 
 ##Cleaning the data
 
-```{r, message = FALSE}
+```{r}
 brfss = 
   brfss_smart2010 %>% 
   janitor::clean_names() %>% 
@@ -157,3 +160,48 @@ location_2010 =
 ```
 
 In 2002, `r pull(location_2002, locationabbr)` were observed at 7 or more locations; in 2010, `r pull(location_2010, locationabbr)` were observed at 7 or more location. 
+
+### Construct a dataset that is limited to Excellent responses and make a “spaghetti” plot
+
+```{r, message = FALSE}
+excellent = 
+  brfss %>% 
+  filter(response %in% "Excellent") %>% 
+  group_by(year, locationabbr) %>% 
+  summarize(average_value = mean(data_value))
+```
+
+```{r, message = FALSE}
+excellent %>% 
+  ggplot(aes(x = year, y = average_value, color = locationabbr)) +
+  geom_line(aes(group = locationabbr)) +
+  theme(legend.position = "right")
+```
+
+The `excellent` table shows a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. 
+
+The spaghetti plot shows the average value over time within every state. 
+
+### Distribution of data_value for responses among locations in NY State for 2006 and 2010
+
+```{r}
+ny_state = 
+  brfss %>% 
+  filter(locationabbr == "NY", year %in% c("2006", "2010")) 
+
+ny_state %>% 
+  ggplot(aes(x = response, y = data_value)) +
+  geom_boxplot() +
+  facet_grid(. ~ year) +
+  labs(
+    x = "Response",
+    y = "Data value", 
+    title = "Distribution of Data Value for Responses Among Locations in NY"
+  ) +
+  theme_bw()
+```
+
+The two-panel boxplot shows the distribution of data_value for responses among locations in NY State for 2006 and for 2010. 
+
+# Problem 3
+
