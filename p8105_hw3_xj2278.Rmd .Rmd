@@ -54,7 +54,7 @@ instacart %>%
   summarize(n_obs = n()) %>% 
   mutate(
     aisle = factor(aisle),
-    aisle = fct_reorder(aisle,n_obs)
+    aisle = fct_reorder(aisle, n_obs)
   ) %>%  
   filter(n_obs > 10000) %>% 
   ggplot(aes(x = aisle, y = n_obs)) +
@@ -179,7 +179,13 @@ excellent =
 excellent %>% 
   ggplot(aes(x = year, y = average_value, color = locationabbr)) +
   geom_line(aes(group = locationabbr)) +
-  theme(legend.position = "right")
+  theme(legend.position = "right") + 
+  labs(
+    title = "Average Value over Time within Every State", 
+    x = "Year", 
+    y = "Average Value",
+    color = "States"
+  )
 ```
 
 The `excellent` table shows a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. 
@@ -194,8 +200,8 @@ ny_state =
   filter(locationabbr == "NY", year %in% c("2006", "2010")) 
 
 ny_state %>% 
-  ggplot(aes(x = response, y = data_value)) +
-  geom_boxplot() +
+  ggplot(aes(x = response, y = data_value, fill = response)) +
+  geom_boxplot(alpha = .5) +
   facet_grid(. ~ year) +
   labs(
     x = "Response",
